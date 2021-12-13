@@ -7,9 +7,17 @@ Experience.killed_mobs = {}
 Experience.xp_gains = {}
 Experience.timers = {}
 
-function count(T)
+function count(T, callback)
     local count = 0
-    for _ in pairs(T) do count = count + 1 end
+    for k,v in pairs(T) do 
+        if callback then
+            if callback(k, v) then
+                count = count + 1
+            end
+        else
+            count = count + 1
+        end 
+    end
     return count
 end
 
@@ -98,7 +106,7 @@ function Experience:CHAT_MSG_COMBAT_XP_GAIN(event, text)
 
     player_level = UnitLevel("player")
 
-    self:Print(time, event, xp_gained, rested_bonus, name)
+    -- self:Print(time, event, xp_gained, rested_bonus, name)
 
     xp_gain = {
         time = time,
@@ -124,10 +132,6 @@ function Experience:CHAT_MSG_COMBAT_XP_GAIN(event, text)
             self:SaveXpData(time) 
         end)
     end
-
-    -- C_Timer.After(2, function() 
-    --     self:SaveXpData(time, name, xp_gained - rested_bonus) 
-    -- end)
 end
 
 function Experience:SaveUnitData(unitId)
@@ -185,7 +189,11 @@ function Experience:SaveXpData(time)
             return
         end
 
-        if count(self.killed_mobs) > 1 then
+        mob_callback = function(_, mob) 
+            return mob.name == xp_gain.name and mob.time == time
+        end
+
+        if count(self.killed_mobs, mob_callback) > 1 then
             self:Print("Found too many killed mobs, ignoring data for now. (shouldn't ever go here)")
             self:CleanUp(time, xp_gain.name)
     
@@ -197,7 +205,7 @@ function Experience:SaveXpData(time)
                 kill_data = {
                     time = time,
                     mob = mob,
-                    exp = xp_gain.xp,
+                    xp = xp_gain.xp,
                     player = xp_gain.player
                 }
 
