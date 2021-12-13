@@ -151,7 +151,13 @@ end
 function Experience:ComputeDistance(unit1, unit2)
     local y1, x1, _, instance1 = UnitPosition(unit1)
     local y2, x2, _, instance2 = UnitPosition(unit2)
-    return instance1 == instance2 and ((x2 - x1) ^ 2 + (y2 - y1) ^ 2) ^ 0.5
+
+    if instance1 == instance2 and instance1 > 0 then
+        -- for now let's assume that if we are in any instance we are close enough
+        return 10
+    else
+        return instance1 == instance2 and ((x2 - x1) ^ 2 + (y2 - y1) ^ 2) ^ 0.5
+    end
 end
 
 function Experience:IsInDistance(unit)
