@@ -58,6 +58,7 @@ function Experience:COMBAT_LOG_EVENT_UNFILTERED()
             self.killed_mobs[dstGUID] = {
                 name = self.mobs[dstGUID].name,
                 level = self.mobs[dstGUID].level,
+                type = self.mobs[dstGUID].type,
                 time = time()
             }
 
