@@ -135,10 +135,12 @@ function Experience:CHAT_MSG_COMBAT_XP_GAIN(event, text)
 end
 
 function Experience:SaveUnitData(unitId)
-    if UnitGUID(unitId) ~= nil and not UnitIsPlayer(unitId1) then
+    guid = UnitGUID(unitId)
+
+    if guid ~= nil and string.sub(guid,1,string.len("Creature")) == "Creature" then
         -- self:Print(UnitName(unitId) .. " " .. UnitLevel(unitId) .. " " .. UnitGUID(unitId))
 
-        self.mobs[UnitGUID(unitId)] = {
+        self.mobs[guid] = {
             name = UnitName(unitId),
             level = UnitLevel(unitId),
             type = UnitClassification(unitId)
