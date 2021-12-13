@@ -4,6 +4,7 @@
 ## Version: 1.0
 ## DefaultState: enabled
 ## LoadOnDemand: 0
+## SavedVariables: ExperienceDB
 
 embeds.xml
 files.xml

@@ -15,6 +15,14 @@ end
 
 function Experience:OnInitialize()
     -- self:Print("initialized")
+
+    local defaults = {
+        char = {
+            xp_gains = {}
+        }
+      }
+
+    self.db = LibStub("AceDB-3.0"):New("ExperienceDB", defaults)
 end
 
 function Experience:OnEnable()
@@ -68,12 +76,40 @@ function Experience:CHAT_MSG_COMBAT_XP_GAIN(event, text)
     local name = string.match(text, "([%a%s]+) dies")
     local time = time()
 
+    in_instance, instance_type = IsInInstance()
+
+    group = {}
+
+    group_count = GetNumGroupMembers() - 1
+
+    for i=1,group_count do
+        if not self:IsInDistance("party" .. i) then
+            self:Print("Party member is too far away - ignoring data for now.")
+            self:CleanUp(time, name)
+
+            return
+        end
+
+        table.insert(group, UnitLevel("party" .. i))
+        -- self:Print("Party " .. i .. " level: " .. group[i])
+    end
+
+    table.sort(group, function(p1, p2) return p1 > p2 end)
+
+    player_level = UnitLevel("player")
+
     self:Print(time, event, xp_gained, rested_bonus, name)
 
     xp_gain = {
         time = time,
         name = name,
-        xp = xp_gained - rested_bonus
+        xp = xp_gained - rested_bonus,
+        player = {
+            player_level = player_level,
+            group = group,
+            in_instance = in_instance,
+            instance_type = instance_type
+        }
     }
 
     if self.xp_gains[time] == nil then
@@ -100,7 +136,8 @@ function Experience:SaveUnitData(unitId)
 
         self.mobs[UnitGUID(unitId)] = {
             name = UnitName(unitId),
-            level = UnitLevel(unitId)
+            level = UnitLevel(unitId),
+            type = UnitClassification(unitId)
         }
     end
 end
@@ -149,7 +186,7 @@ function Experience:SaveXpData(time)
         end
 
         if count(self.killed_mobs) > 1 then
-            self:Print("Found too many killed mobs, ignoring data for now. (shouldn't ever go here)4")
+            self:Print("Found too many killed mobs, ignoring data for now. (shouldn't ever go here)")
             self:CleanUp(time, xp_gain.name)
     
             return
@@ -157,25 +194,17 @@ function Experience:SaveXpData(time)
 
         for guid, mob in pairs(self.killed_mobs) do
             if mob.time == time and mob.name == xp_gain.name then
-                group = {}
+                kill_data = {
+                    time = time,
+                    mob = mob,
+                    exp = xp_gain.xp,
+                    player = xp_gain.player
+                }
 
-                group_count = GetNumGroupMembers() - 1
+                DevTools_Dump(kill_data)
 
-                for i=1,group_count do
-                    if not self:IsInDistance("party" .. i) then
-                        self:Print("Party member is too far away - ignoring data for now.")
-                        self:CleanUp(time, xp_gain.name)
+                table.insert(self.db.char.xp_gains, kill_data)
 
-                        return
-                    end
-
-                    group[i] = UnitLevel("party" .. i)
-                    self:Print("Party " .. i .. " level: " .. group[i])
-                end
-
-                player = UnitLevel("player")
-        
-                self:Print(time, xp_gain.name, xp_gain.xp, mob.level, player)
                 self:CleanUp(time, xp_gain.name)
 
                 return
@@ -187,11 +216,9 @@ end
 function Experience:CleanUp(time, name)
     self.xp_gains[time] = nil
 
-    if name ~= nil then
-        for guid, mob in pairs(self.killed_mobs) do
-            if mob.time == time and mob.name == name then
-                self.killed_mobs[guid] = nil
-            end
+    for guid, mob in pairs(self.killed_mobs) do
+        if mob.time == time and (mob.name == name or name == nil) then
+            self.killed_mobs[guid] = nil
         end
     end
 end
