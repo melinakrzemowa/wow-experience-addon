@@ -47,11 +47,11 @@ function Experience:OnDisable()
 end
 
 function Experience:COMBAT_LOG_EVENT_UNFILTERED()
-    local _, eventType, _, _, _, _, _, dstGUID = CombatLogGetCurrentEventInfo()
+    local _, eventType, _, _, _, _, _, dstGUID, name = CombatLogGetCurrentEventInfo()
 
     -- self:Print(CombatLogGetCurrentEventInfo())
 
-    if eventType == "PARTY_KILL" then
+    if eventType == "UNIT_DIED" then
         if self.mobs[dstGUID] ~= nil then
             -- self:Print("Killed: ", self.mobs[dstGUID].name, self.mobs[dstGUID].level)
 
@@ -63,6 +63,8 @@ function Experience:COMBAT_LOG_EVENT_UNFILTERED()
             }
 
             self.mobs[dstGUID] = nil
+        else
+            self:Print("Not found killed mob: ", name, dstGUID)
         end
     end
 end
@@ -209,6 +211,13 @@ function Experience:SaveXpData(time)
             return
         end
 
+        if count(self.killed_mobs, mob_callback) == 0 then
+            self:Print("Not found related killed mob: ", xp_gain.name, time)
+            self:CleanUp(time, xp_gain.name)
+
+            return
+        end
+
         for guid, mob in pairs(self.killed_mobs) do
             if mob.time == time and mob.name == xp_gain.name then
                 kill_data = {
@@ -218,7 +227,9 @@ function Experience:SaveXpData(time)
                     player = xp_gain.player
                 }
 
-                DevTools_Dump(kill_data)
+                -- DevTools_Dump(kill_data)
+
+                self:Print(time, player.level, mob.name, mob.level, xp_gain.xp, mob.type)
 
                 table.insert(self.db.char.xp_gains, kill_data)
 
