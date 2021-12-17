@@ -220,18 +220,33 @@ function Experience:SaveXpData(time)
 
         for guid, mob in pairs(self.killed_mobs) do
             if mob.time == time and mob.name == xp_gain.name then
+                player = xp_gain.player
+                group = xp_gain.player.group
+
                 kill_data = {
-                    time = time,
-                    mob = mob,
-                    xp = xp_gain.xp,
-                    player = xp_gain.player
+                    time = time, 
+                    mob = {
+                        level = mob.level,
+                        name = mob.name,
+                        type = mob.type
+                    },
+                    xp = xp_gain.xp, 
+                    player = {
+                        level = player.player_level, 
+                        in_instance = player.in_instance, 
+                        instance_type = player.instance_type
+                    },
+                    group_1 = group[1], 
+                    group_2 = group[2], 
+                    group_3 = group[3], 
+                    group_4 = group[4]
                 }
 
                 -- DevTools_Dump(kill_data)
 
                 self:Print(time, player.level, mob.name, mob.level, xp_gain.xp, mob.type)
 
-                table.insert(self.db.char.xp_gains, kill_data)
+                self.db.char.xp_gains[tostring(time)] = kill_data
 
                 self:CleanUp(time, xp_gain.name)
 
